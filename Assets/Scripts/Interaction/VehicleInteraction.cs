@@ -4,94 +4,102 @@ using StarterAssets;
 
 public class VehicleInteraction : MonoBehaviour
 {
-    #region PLAYER
+    #region PLAYER REFERENCES
 
     [Header("PLAYER")]
-    [SerializeField] private Transform player;
-    [SerializeField] private CharacterController playerCharacterController;
     [SerializeField] private FirstPersonController playerController;
     [SerializeField] private StarterAssetsInputs playerInputs;
     [SerializeField] private PlayerInput playerInput;
 
     #endregion
 
-    #region REACHLIFT
+    #region REACHLIFT REFERENCES
 
     [Header("REACHLIFT")]
     [SerializeField] private ReachliftController reachliftController;
     [SerializeField] private ReachliftInput reachliftInput;
     [SerializeField] private PlayerInput reachliftPlayerInput;
+    [SerializeField] private ReachliftCameraLook reachliftCameraLook;
 
     #endregion
 
-    #region INTERACTION
+    #region VEHICLE SYSTEMS
 
-    [Header("Interaction Points")]
-    [SerializeField] private Transform seat;
-    [SerializeField] private Transform exitPoint;
+    [Header("VEHICLE SYSTEMS")]
+    [SerializeField] private VehicleSeatController seatController;
 
     #endregion
 
     #region STATE
 
-    private bool playerInsideTrigger = false;
-    private bool driving = false;
+    private bool playerInsideTrigger;
+    private bool driving;
 
-    private Transform originalParent;
+    private bool waitForPlayerInteractRelease;
+    private bool waitForReachliftInteractRelease;
 
     #endregion
-
-    //========================================================
 
     #region UNITY
 
-    private void Start()
-    {
-        originalParent = player.parent;
-    }
-
     private void Update()
     {
-        CheckPlayerInteraction();
-        CheckVehicleInteraction();
+        if (driving)
+        {
+            CheckVehicleInteraction();
+        }
+        else
+        {
+            CheckPlayerInteraction();
+        }
     }
 
     #endregion
-
-    //========================================================
 
     #region INPUT
 
     private void CheckPlayerInteraction()
     {
-        if (driving)
-            return;
-
         if (!playerInsideTrigger)
             return;
 
-        if (playerInputs.interact)
+        if (waitForPlayerInteractRelease)
         {
-            playerInputs.interact = false;
-            EnterVehicle();
+            if (!playerInputs.interact)
+            {
+                waitForPlayerInteractRelease = false;
+            }
+
+            return;
         }
+
+        if (!playerInputs.interact)
+            return;
+
+        playerInputs.interact = false;
+        EnterVehicle();
     }
 
     private void CheckVehicleInteraction()
     {
-        if (!driving)
+        if (waitForReachliftInteractRelease)
+        {
+            if (!reachliftInput.interact)
+            {
+                waitForReachliftInteractRelease = false;
+            }
+
+            return;
+        }
+
+        if (!reachliftInput.interact)
             return;
 
-        if (reachliftInput.interact)
-        {
-            reachliftInput.interact = false;
-            ExitVehicle();
-        }
+        reachliftInput.interact = false;
+        ExitVehicle();
     }
 
     #endregion
-
-    //========================================================
 
     #region ENTER VEHICLE
 
@@ -99,53 +107,29 @@ public class VehicleInteraction : MonoBehaviour
     {
         driving = true;
 
-        //--------------------------------------------------
-        // Desactivar CharacterController para mover Player
-        //--------------------------------------------------
+        playerInputs.interact = false;
 
-        playerCharacterController.enabled = false;
-
-        //--------------------------------------------------
-        // Mover al asiento
-        //--------------------------------------------------
-
-        player.position = seat.position;
-        player.rotation = seat.rotation;
-
-        //--------------------------------------------------
-        // Hacer hijo del Seat
-        //--------------------------------------------------
-
-        player.SetParent(seat);
-
-        //--------------------------------------------------
-        // Reactivar CharacterController
-        //--------------------------------------------------
-
-        playerCharacterController.enabled = true;
-
-        //--------------------------------------------------
-        // Desactivar controles Player
-        //--------------------------------------------------
-
+        // Desactivar control del Player.
         playerController.enabled = false;
         playerInputs.enabled = false;
         playerInput.enabled = false;
 
-        //--------------------------------------------------
-        // Activar Reachlift
-        //--------------------------------------------------
+        // Mover el Player completo a PlayerPivot.
+        // Su PlayerCameraRoot permanece intacto.
+        seatController.SitPlayer();
 
-        reachliftPlayerInput.enabled = true;
+        // Activar control del Reachlift.
         reachliftInput.enabled = true;
+        reachliftPlayerInput.enabled = true;
         reachliftController.enabled = true;
+        reachliftCameraLook.enabled = true;
+
+        waitForReachliftInteractRelease = true;
 
         Debug.Log("Entraste al Reachlift");
     }
 
     #endregion
-
-    //========================================================
 
     #region EXIT VEHICLE
 
@@ -153,53 +137,28 @@ public class VehicleInteraction : MonoBehaviour
     {
         driving = false;
 
-        //--------------------------------------------------
-        // Desactivar Reachlift
-        //--------------------------------------------------
+        reachliftInput.interact = false;
 
+        // Desactivar control del Reachlift.
         reachliftController.enabled = false;
-        reachliftInput.enabled = false;
         reachliftPlayerInput.enabled = false;
+        reachliftInput.enabled = false;
+        reachliftCameraLook.enabled = false;
 
-        //--------------------------------------------------
-        // Desactivar CharacterController
-        //--------------------------------------------------
+        // Mover al Player completo hacia ExitPoint.
+        seatController.ExitPlayer();
 
-        playerCharacterController.enabled = false;
-
-        //--------------------------------------------------
-        // Restaurar padre original
-        //--------------------------------------------------
-
-        player.SetParent(originalParent);
-
-        //--------------------------------------------------
-        // Colocar en punto de salida
-        //--------------------------------------------------
-
-        player.position = exitPoint.position;
-        player.rotation = exitPoint.rotation;
-
-        //--------------------------------------------------
-        // Reactivar CharacterController
-        //--------------------------------------------------
-
-        playerCharacterController.enabled = true;
-
-        //--------------------------------------------------
-        // Reactivar controles Player
-        //--------------------------------------------------
-
-        playerInput.enabled = true;
+        // Reactivar control del Player.
         playerInputs.enabled = true;
+        playerInput.enabled = true;
         playerController.enabled = true;
+
+        waitForPlayerInteractRelease = true;
 
         Debug.Log("Saliste del Reachlift");
     }
 
     #endregion
-
-    //========================================================
 
     #region TRIGGER
 
@@ -209,7 +168,6 @@ public class VehicleInteraction : MonoBehaviour
             return;
 
         playerInsideTrigger = true;
-
         Debug.Log("Presiona E para conducir.");
     }
 
