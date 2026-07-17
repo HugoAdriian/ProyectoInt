@@ -591,6 +591,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 212931389}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 212931391}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 212931392}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 212931393}
   m_SourcePrefab: {fileID: 100100000, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
 --- !u!4 &212931383 stripped
 Transform:
@@ -639,16 +648,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd5490681ba2eac69883aaa9e50ecce4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Vehicle
-  player: {fileID: 678545734}
-  playerCharacterController: {fileID: 678545733}
   playerController: {fileID: 678545732}
   playerInputs: {fileID: 678545731}
   playerInput: {fileID: 678545730}
   reachliftController: {fileID: 212931389}
   reachliftInput: {fileID: 212931390}
   reachliftPlayerInput: {fileID: 212931387}
-  seat: {fileID: 874888419}
-  exitPoint: {fileID: 874888419}
+  reachliftCameraLook: {fileID: 212931393}
+  seatController: {fileID: 212931392}
 --- !u!114 &212931387
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -730,11 +737,59 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ReachliftInput
   move: 0
   turn: 0
+  look: {x: 0, y: 0}
   liftUp: 0
   liftDown: 0
   scan: 0
   horn: 0
   interact: 0
+--- !u!114 &212931391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212931384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a67d62203037f5428c058320bba894f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReachliftCameraController
+  cameraPoint: {fileID: 1091662410}
+--- !u!114 &212931392
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212931384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1de755b585b75648b4116b8dbb0673f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VehicleSeatController
+  player: {fileID: 678545734}
+  playerCharacterController: {fileID: 678545733}
+  playerPivot: {fileID: 1623040564}
+  exitPoint: {fileID: 1365181114}
+--- !u!114 &212931393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212931384}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4156a68736be0c34a8e0346abeb493ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReachliftCameraLook
+  input: {fileID: 212931390}
+  playerRoot: {fileID: 678545734}
+  playerCameraRoot: {fileID: 879575788}
+  lookSensitivity: 1
+  topClamp: 80
+  bottomClamp: -70
 --- !u!1 &261950284
 GameObject:
   m_ObjectHideFlags: 0
@@ -2026,6 +2081,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1615042245}
+  - {fileID: 1623040564}
   - {fileID: 1365181114}
   - {fileID: 1091662410}
   m_Father: {fileID: 212931383}
@@ -3824,6 +3880,37 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.25, z: -0.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 874888419}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1623040563
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1623040564}
+  m_Layer: 0
+  m_Name: PlayerPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1623040564
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1623040563}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.35, z: -0.35}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

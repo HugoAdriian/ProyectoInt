@@ -1,14 +1,17 @@
 using UnityEngine;
+
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-#esprueba
 public class ReachliftInput : MonoBehaviour
 {
     [Header("Movimiento")]
     public float move;
     public float turn;
+
+    [Header("Cámara")]
+    public Vector2 look;
 
     [Header("Acciones")]
     public bool liftUp;
@@ -27,6 +30,11 @@ public class ReachliftInput : MonoBehaviour
     public void OnTurn(InputValue value)
     {
         TurnInput(value.Get<float>());
+    }
+
+    public void OnLook(InputValue value)
+    {
+        LookInput(value.Get<Vector2>());
     }
 
     public void OnLiftUp(InputValue value)
@@ -56,10 +64,6 @@ public class ReachliftInput : MonoBehaviour
 
 #endif
 
-    //==========================
-    // Métodos de entrada
-    //==========================
-
     public void MoveInput(float value)
     {
         move = value;
@@ -68,6 +72,11 @@ public class ReachliftInput : MonoBehaviour
     public void TurnInput(float value)
     {
         turn = value;
+    }
+
+    public void LookInput(Vector2 value)
+    {
+        look = value;
     }
 
     public void LiftUpInput(bool value)
@@ -93,5 +102,10 @@ public class ReachliftInput : MonoBehaviour
     public void InteractInput(bool value)
     {
         interact = value;
+    }
+
+    public void ResetLookInput()
+    {
+        look = Vector2.zero;
     }
 }
