@@ -20,6 +20,7 @@ public class VehicleInteraction : MonoBehaviour
     [SerializeField] private ReachliftInput reachliftInput;
     [SerializeField] private PlayerInput reachliftPlayerInput;
     [SerializeField] private ReachliftCameraLook reachliftCameraLook;
+    [SerializeField] private ForkliftLiftController liftController;
 
     #endregion
 
@@ -27,6 +28,7 @@ public class VehicleInteraction : MonoBehaviour
 
     [Header("VEHICLE SYSTEMS")]
     [SerializeField] private VehicleSeatController seatController;
+    [SerializeField] private WorkerVisualController workerVisualController;
 
     #endregion
 
@@ -118,11 +120,15 @@ public class VehicleInteraction : MonoBehaviour
         // Su PlayerCameraRoot permanece intacto.
         seatController.SitPlayer();
 
+        // Ocultar solamente las mallas del operador.
+        workerVisualController.HideWorker();
+
         // Activar control del Reachlift.
         reachliftInput.enabled = true;
         reachliftPlayerInput.enabled = true;
         reachliftController.enabled = true;
         reachliftCameraLook.enabled = true;
+        liftController.enabled = true;
 
         waitForReachliftInteractRelease = true;
 
@@ -144,9 +150,13 @@ public class VehicleInteraction : MonoBehaviour
         reachliftPlayerInput.enabled = false;
         reachliftInput.enabled = false;
         reachliftCameraLook.enabled = false;
+        liftController.enabled = false;
 
         // Mover al Player completo hacia ExitPoint.
         seatController.ExitPlayer();
+
+        // Mostrar nuevamente al operador al caminar.
+        workerVisualController.ShowWorker();
 
         // Reactivar control del Player.
         playerInputs.enabled = true;
