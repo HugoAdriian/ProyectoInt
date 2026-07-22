@@ -19,6 +19,7 @@ public class ReachliftInput : MonoBehaviour
     public bool scan;
     public bool horn;
     public bool interact;
+    public bool grabPallet;
 
 #if ENABLE_INPUT_SYSTEM
 
@@ -45,6 +46,11 @@ public class ReachliftInput : MonoBehaviour
     public void OnLiftDown(InputValue value)
     {
         LiftDownInput(value.isPressed);
+    }
+
+    public void OnGrabPallet(InputValue value)
+    {
+        GrabPalletInput(value.isPressed);
     }
 
     public void OnScan(InputValue value)
@@ -87,6 +93,11 @@ public class ReachliftInput : MonoBehaviour
     public void LiftDownInput(bool value)
     {
         liftDown = value;
+    }
+
+    public void GrabPalletInput(bool value)
+    {
+        grabPallet = value;
     }
 
     public void ScanInput(bool value)
