@@ -3,45 +3,113 @@ using UnityEngine;
 
 public class ScannerUI : MonoBehaviour
 {
-    [Header("Panel")]
-    public GameObject scannerPanel;
+    #region REFERENCES
 
-    public GameObject actionText;
+    [Header("Panel")]
+    [SerializeField] private GameObject scannerPanel;
+    [SerializeField] private GameObject actionText;
 
     [Header("Textos")]
-    public TMP_Text productText;
-    public TMP_Text skuText;
-    public TMP_Text rackText;
-    public TMP_Text quantityText;
+    [SerializeField] private TMP_Text productText;
+    [SerializeField] private TMP_Text skuText;
+    [SerializeField] private TMP_Text rackText;
+    [SerializeField] private TMP_Text quantityText;
+
+    #endregion
+
+    #region UNITY
+
+    private void Start()
+    {
+        Hide();
+    }
+
+    #endregion
+
+    #region PALLET UI
 
     public void Show(Pallet pallet)
     {
+        if (pallet == null)
+            return;
+
         scannerPanel.SetActive(true);
 
-        productText.text = "Producto: " + pallet.productName;
-        skuText.text = "SKU: " + pallet.sku;
-        rackText.text = "Rack: " + pallet.rack + "   Nivel: " + pallet.level;
-        quantityText.text = "Cantidad: " + pallet.quantity;
+        productText.text =
+            $"Producto: {pallet.productName}";
+
+        skuText.text =
+            $"SKU: {pallet.sku}";
+
+        rackText.text =
+            $"Ubicación: {pallet.rack} | Nivel: {pallet.level}";
+
+        quantityText.text =
+            $"Cantidad: {pallet.quantity}";
     }
 
-    public void Hide()
+    #endregion
+
+    #region LOCATION UI
+
+    public void Show(StorageLocation location)
     {
-        scannerPanel.SetActive(false);
-        actionText.SetActive(false);
+        if (location == null)
+            return;
+
+        scannerPanel.SetActive(true);
+
+        productText.text =
+            $"Ubicación: {location.locationID}";
+
+        skuText.text =
+            $"Rack: {location.rack}";
+
+        rackText.text =
+            $"Nivel: {location.level}";
+
+        quantityText.text =
+            location.CanReceivePallet()
+                ? "Estado: Disponible"
+                : "Estado: Ocupada";
+    }
+
+    #endregion
+
+    #region MESSAGE UI
+
+    public void ShowMessage(
+        string title,
+        string message)
+    {
+        scannerPanel.SetActive(true);
+
+        productText.text = title;
+        skuText.text = message;
+        rackText.text = string.Empty;
+        quantityText.text = string.Empty;
     }
 
     public void ShowAction()
     {
-        actionText.SetActive(true);
+        if (actionText != null)
+            actionText.SetActive(true);
     }
 
     public void HideAction()
     {
-        actionText.SetActive(false);
+        if (actionText != null)
+            actionText.SetActive(false);
     }
-    void Start()
+
+    public void Hide()
     {
-        scannerPanel.SetActive(false);
-        actionText.SetActive(false);
+        if (scannerPanel != null)
+            scannerPanel.SetActive(false);
+
+        if (actionText != null)
+            actionText.SetActive(false);
     }
+
+    #endregion
 }

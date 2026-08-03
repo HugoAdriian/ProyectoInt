@@ -1,150 +1,174 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class Scanner : MonoBehaviour
 {
-    [Header("Configuración")]
-    public float scanDistance = 5f;
-
+    #region REFERENCES
 
     [Header("Interfaz")]
-    public ScannerUI scannerUI;
-
+    [SerializeField] private ScannerUI scannerUI;
 
     [Header("Orden")]
-    public OrderManager orderManager;
+    [SerializeField] private OrderManager orderManager;
 
+    #endregion
+
+    #region SETTINGS
+
+    [Header("Configuración")]
+    [SerializeField] private float scanDistance = 10f;
+
+    #endregion
+
+    #region STATE
 
     private Pallet currentPallet;
+    private StorageLocation currentLocation;
 
+    #endregion
 
+    #region UNITY
 
-    void Update()
+    private void Update()
     {
-        DetectPallet();
+        DetectScannableObject();
 
+        if (Keyboard.current == null)
+            return;
 
-        if (currentPallet != null && Keyboard.current.eKey.wasPressedThisFrame)
+        if (Keyboard.current.tabKey.wasPressedThisFrame)
         {
-            ScanPallet();
+            ScanCurrentObject();
         }
     }
 
+    #endregion
 
+    #region DETECTION
 
-    void DetectPallet()
+    private void DetectScannableObject()
     {
         Ray ray = new Ray(
             transform.position,
-            transform.forward
-        );
-
+            transform.forward);
 
         Debug.DrawRay(
             transform.position,
             transform.forward * scanDistance,
-            Color.green
-        );
+            Color.green);
 
+        RaycastHit[] hits =
+            Physics.RaycastAll(
+                ray,
+                scanDistance);
 
-        RaycastHit hit;
+        Array.Sort(
+            hits,
+            (firstHit, secondHit) =>
+                firstHit.distance.CompareTo(
+                    secondHit.distance));
 
+        currentPallet = null;
+        currentLocation = null;
 
-        if (Physics.Raycast(ray, out hit, scanDistance))
+        foreach (RaycastHit hit in hits)
         {
-            Pallet pallet = hit.collider.GetComponentInParent<Pallet>();
-
+            Pallet pallet =
+                hit.collider
+                    .GetComponentInParent<Pallet>();
 
             if (pallet != null)
             {
                 currentPallet = pallet;
 
+                scannerUI?.ShowAction();
+                return;
+            }
 
-                scannerUI.ShowAction();
+            StorageLocation location =
+                hit.collider
+                    .GetComponentInParent<StorageLocation>();
 
+            if (location != null)
+            {
+                currentLocation = location;
 
+                scannerUI?.ShowAction();
                 return;
             }
         }
 
-
-        currentPallet = null;
-
-
-        scannerUI.Hide();
+        scannerUI?.Hide();
     }
 
+    #endregion
 
+    #region SCANNING
 
-
-    void ScanPallet()
+    private void ScanCurrentObject()
     {
-        scannerUI.HideAction();
-
-
-        scannerUI.Show(currentPallet);
-
-
-        Debug.Log(
-            "Pallet escaneado: " 
-            + currentPallet.productName
-        );
-
-
-        CompleteOrderItem();
-    }
-
-
-
-
-    void CompleteOrderItem()
-    {
-        if(orderManager == null)
+        if (currentPallet != null)
         {
-            Debug.LogError("OrderManager no asignado en Scanner");
+            ScanPallet();
             return;
         }
 
-
-
-        foreach(OrderItem item in orderManager.currentOrder.items)
+        if (currentLocation != null)
         {
-            if(item.palletID == currentPallet.palletID)
-            {
-                if(item.scanned)
-                {
-                    Debug.Log("Este pallet ya fue escaneado");
-                    return;
-                }
-
-
-                item.scanned = true;
-
-
-                orderManager.currentOrder.completedProducts++;
-
-
-                orderManager.orderUI.UpdateOrder(
-                    orderManager.currentOrder
-                );
-
-
-                Debug.Log(
-                    "Orden actualizada: "
-                    + item.productName
-                );
-
-
-                return;
-            }
+            ScanLocation();
+            return;
         }
 
-
+        scannerUI?.ShowMessage(
+            "Escaneo",
+            "No se detectó un objeto válido.");
 
         Debug.Log(
-            "El pallet " 
-            + currentPallet.palletID 
-            + " no pertenece a la orden"
-        );
+            "No existe un objeto válido frente al escáner.");
     }
+
+    private void ScanPallet()
+    {
+        scannerUI?.HideAction();
+        scannerUI?.Show(currentPallet);
+
+        Debug.Log(
+            $"Tarima escaneada: {currentPallet.palletID}");
+
+        if (orderManager == null)
+        {
+            Debug.LogError(
+                "Scanner: OrderManager no está asignado.",
+                this);
+
+            return;
+        }
+
+        orderManager.ValidatePallet(
+            currentPallet);
+    }
+
+    private void ScanLocation()
+    {
+        scannerUI?.HideAction();
+        scannerUI?.Show(currentLocation);
+
+        Debug.Log(
+            $"Ubicación escaneada: {currentLocation.locationID}");
+
+        if (orderManager == null)
+        {
+            Debug.LogError(
+                "Scanner: OrderManager no está asignado.",
+                this);
+
+            return;
+        }
+
+        orderManager.ValidateDestination(
+            currentLocation);
+    }
+
+    #endregion
 }
