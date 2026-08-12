@@ -1,64 +1,158 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class OrderUI : MonoBehaviour
 {
-    public TMP_Text orderText;
+    #region REFERENCES
 
+    [Header("Pantalla de tareas")]
+    [SerializeField] private TMP_Text orderText;
 
-    public void UpdateOrder(Order order)
+    #endregion
+
+    #region TASK BOARD
+
+    public void UpdateTaskBoard(
+        List<PutAwayTask> tasks,
+        int currentTaskIndex,
+        HashSet<int> completedTaskIndexes,
+        bool currentTaskCompleted)
     {
-        if (order == null)
-        {
-            Debug.LogError("La orden recibida es NULL");
-            return;
-        }
-
-
         if (orderText == null)
         {
-            Debug.LogError("orderText es NULL");
+            Debug.LogError(
+                "OrderUI: Order Text no está asignado.",
+                this);
+
             return;
         }
 
+        if (tasks == null || tasks.Count == 0)
+        {
+            orderText.text =
+                "NO HAY TAREAS PUT AWAY";
+
+            return;
+        }
 
         string text = "";
 
+        //--------------------------------------------------
+        // TAREA ACTUAL
+        //--------------------------------------------------
 
-        text += "ORDEN #" + order.orderID + "\n\n";
+        text += "TAREA ACTUAL\n";
+        text += "-------------------------\n";
 
-
-        text += "Cliente: " + order.customer + "\n\n";
-
-
-        text += "Productos\n\n";
-
-
-        foreach (OrderItem item in order.items)
+        if (currentTaskIndex >= 0 &&
+            currentTaskIndex < tasks.Count)
         {
-            string check = item.scanned ? "[X] " : "[ ] ";
+            PutAwayTask currentTask =
+                tasks[currentTaskIndex];
 
-            text += check + item.productName + "\n";
+            text +=
+                $"{currentTask.taskID}\n";
+
+            text +=
+                $"Pallet: {currentTask.palletID}\n";
+
+            text +=
+                $"Producto: {currentTask.productName}\n";
+
+            text +=
+                $"Origen: {currentTask.originLocationID}\n";
+
+            text +=
+                $"Destino: {currentTask.destinationLocationID}\n";
+
+            text +=
+                currentTaskCompleted
+                    ? "Estado: COMPLETADA\n"
+                    : "Estado: EN PROCESO\n";
+        }
+        else
+        {
+            text += "Sin tarea activa\n";
         }
 
+        //--------------------------------------------------
+        // COMPLETADAS
+        //--------------------------------------------------
 
         text += "\n";
+        text += "COMPLETADAS\n";
+        text += "-------------------------\n";
 
+        bool hasCompletedTasks = false;
 
-        text += "Escaneados: " +
-                order.completedProducts +
-                " / " +
-                order.items.Count;
-        if(order.completed)
+        for (int i = 0; i < tasks.Count; i++)
         {
-            text += "\n\nORDEN LISTA PARA ENTREGA";
+            if (!completedTaskIndexes.Contains(i))
+                continue;
+
+            PutAwayTask task = tasks[i];
+
+            text +=
+                $"[OK] {task.taskID} | " +
+                $"{task.palletID} | " +
+                $"{task.destinationLocationID}\n";
+
+            hasCompletedTasks = true;
         }
 
-        // Aquí se actualiza el texto en pantalla
+        if (!hasCompletedTasks)
+        {
+            text += "Ninguna\n";
+        }
+
+        //--------------------------------------------------
+        // PENDIENTES
+        //--------------------------------------------------
+
+        text += "\n";
+        text += "PENDIENTES\n";
+        text += "-------------------------\n";
+
+        bool hasPendingTasks = false;
+
+        for (int i = 0; i < tasks.Count; i++)
+        {
+            //------------------------------------------
+            // No mostrar la tarea actual
+            //------------------------------------------
+
+            if (i == currentTaskIndex)
+                continue;
+
+            //------------------------------------------
+            // No mostrar tareas completadas
+            //------------------------------------------
+
+            if (completedTaskIndexes.Contains(i))
+                continue;
+
+            PutAwayTask task = tasks[i];
+
+            text +=
+                $"{task.taskID} | " +
+                $"{task.palletID} | " +
+                $"{task.destinationLocationID}\n";
+
+            hasPendingTasks = true;
+        }
+
+        if (!hasPendingTasks)
+        {
+            text += "Ninguna\n";
+        }
+
+        //--------------------------------------------------
+        // ACTUALIZAR PANTALLA
+        //--------------------------------------------------
+
         orderText.text = text;
-
-
-        Debug.Log("UI ACTUALIZADA:");
-        Debug.Log(text);
     }
+
+    #endregion
 }

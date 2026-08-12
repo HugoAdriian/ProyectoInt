@@ -74,17 +74,30 @@ public class Scanner : MonoBehaviour
 
         foreach (RaycastHit hit in hits)
         {
+            //------------------------------------------
+            // PALLET
+            //------------------------------------------
+
             Pallet pallet =
-                hit.collider
-                    .GetComponentInParent<Pallet>();
+                hit.collider.GetComponentInParent<Pallet>();
 
             if (pallet != null)
             {
                 currentPallet = pallet;
 
+                // Mostrar información inmediatamente.
+                scannerUI?.ShowPalletInfo(
+                    currentPallet);
+
+                // Mostrar opción de escaneo.
                 scannerUI?.ShowAction();
+
                 return;
             }
+
+            //------------------------------------------
+            // STORAGE LOCATION
+            //------------------------------------------
 
             StorageLocation location =
                 hit.collider
@@ -94,12 +107,23 @@ public class Scanner : MonoBehaviour
             {
                 currentLocation = location;
 
+                // No mostrar datos de ubicación
+                // dentro del ScanPanel.
+                scannerUI?.HidePalletInfo();
+
+                // Pero sí permitir escanear.
                 scannerUI?.ShowAction();
+
                 return;
             }
         }
 
-        scannerUI?.Hide();
+        //----------------------------------------------
+        // Nada detectable
+        //----------------------------------------------
+
+        scannerUI?.HidePalletInfo();
+        scannerUI?.HideAction();
     }
 
     #endregion
@@ -120,18 +144,17 @@ public class Scanner : MonoBehaviour
             return;
         }
 
-        scannerUI?.ShowMessage(
-            "Escaneo",
-            "No se detectó un objeto válido.");
-
         Debug.Log(
             "No existe un objeto válido frente al escáner.");
     }
 
     private void ScanPallet()
     {
-        scannerUI?.HideAction();
-        scannerUI?.Show(currentPallet);
+        if (currentPallet == null)
+            return;
+
+        // La información ya está visible.
+        // No necesitamos volver a modificar el HUD.
 
         Debug.Log(
             $"Tarima escaneada: {currentPallet.palletID}");
@@ -145,17 +168,23 @@ public class Scanner : MonoBehaviour
             return;
         }
 
+        //--------------------------------------------------
+        // OrderManager decidirá si es correcta o incorrecta
+        // y enviará el resultado a NotificationPanel.
+        //--------------------------------------------------
+
         orderManager.ValidatePallet(
             currentPallet);
     }
 
     private void ScanLocation()
     {
-        scannerUI?.HideAction();
-        scannerUI?.Show(currentLocation);
+        if (currentLocation == null)
+            return;
 
         Debug.Log(
-            $"Ubicación escaneada: {currentLocation.locationID}");
+            $"Ubicación escaneada: " +
+            $"{currentLocation.locationID}");
 
         if (orderManager == null)
         {

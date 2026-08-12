@@ -1,53 +1,49 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class WarehouseHUDController : MonoBehaviour
 {
-    #region MISSION PANEL
+    #region REFERENCES
+
+    [Header("Order Manager")]
+    [SerializeField] private OrderManager orderManager;
 
     [Header("Mission Panel")]
-    [SerializeField] private CanvasGroup missionPanel;
+    [SerializeField] private GameObject missionPanel;
     [SerializeField] private TMP_Text missionTitle;
     [SerializeField] private TMP_Text missionDescription;
     [SerializeField] private TMP_Text missionPallet;
     [SerializeField] private TMP_Text missionOrigin;
     [SerializeField] private TMP_Text missionDestination;
 
-    #endregion
-
-    #region NOTIFICATION PANEL
-
     [Header("Notification Panel")]
-    [SerializeField] private CanvasGroup notificationPanel;
+    [SerializeField] private GameObject notificationPanel;
     [SerializeField] private TMP_Text notificationTitle;
     [SerializeField] private TMP_Text notificationMessage;
 
-    #endregion
-
-    #region SUMMARY PANEL
-
     [Header("Summary Panel")]
-    [SerializeField] private CanvasGroup summaryPanel;
+    [SerializeField] private GameObject summaryPanel;
     [SerializeField] private TMP_Text summaryTitle;
     [SerializeField] private TMP_Text summaryBody;
 
+    [Header("Summary Buttons")]
+    [SerializeField] private Button newTaskButton;
+    [SerializeField] private Button restartButton;
+
+    [Header("Camera Control")]
+    [SerializeField] private MonoBehaviour firstPersonController;
+    [SerializeField] private MonoBehaviour reachliftCameraLook;
+
     #endregion
 
-    #region ANIMATION SETTINGS
+    #region PRIVATE
 
-    [Header("Animation Settings")]
-    [SerializeField] private float fadeDuration = 0.35f;
-    [SerializeField] private float missionVisibleDuration = 5f;
-    [SerializeField] private float notificationVisibleDuration = 3f;
-
-    #endregion
-
-    #region COROUTINES
-
-    private Coroutine missionCoroutine;
     private Coroutine notificationCoroutine;
-    private Coroutine summaryCoroutine;
+
+    private bool firstPersonWasActive;
+    private bool reachliftCameraWasActive;
 
     #endregion
 
@@ -55,9 +51,34 @@ public class WarehouseHUDController : MonoBehaviour
 
     private void Awake()
     {
-        HideImmediately(missionPanel);
-        HideImmediately(notificationPanel);
-        HideImmediately(summaryPanel);
+        if (newTaskButton != null)
+        {
+            newTaskButton.onClick.RemoveAllListeners();
+            newTaskButton.onClick.AddListener(
+                OnNewTaskPressed);
+        }
+
+        if (restartButton != null)
+        {
+            restartButton.onClick.RemoveAllListeners();
+            restartButton.onClick.AddListener(
+                OnRestartPressed);
+        }
+    }
+
+    private void Start()
+    {
+        if (notificationPanel != null)
+        {
+            notificationPanel.SetActive(false);
+        }
+
+        if (summaryPanel != null)
+        {
+            summaryPanel.SetActive(false);
+        }
+
+        LockCursor();
     }
 
     #endregion
@@ -65,71 +86,104 @@ public class WarehouseHUDController : MonoBehaviour
     #region MISSION
 
     public void ShowMission(
-        string orderID,
+        string taskID,
         string palletID,
         string productName,
         string origin,
         string destination)
     {
+        if (missionPanel != null)
+        {
+            missionPanel.SetActive(true);
+        }
+
         if (missionTitle != null)
-            missionTitle.text = "NUEVA TAREA";
+        {
+            missionTitle.text =
+                $"TAREA {taskID}";
+        }
 
         if (missionDescription != null)
         {
             missionDescription.text =
-                $"Orden: {orderID}\n{productName}";
+                "Realizar operación Put Away";
         }
 
         if (missionPallet != null)
-            missionPallet.text = $"Tarima: {palletID}";
+        {
+            missionPallet.text =
+                $"Pallet: {palletID}\n" +
+                $"Producto: {productName}";
+        }
 
         if (missionOrigin != null)
-            missionOrigin.text = $"Origen: {origin}";
+        {
+            missionOrigin.text =
+                $"Origen: {origin}";
+        }
 
         if (missionDestination != null)
-            missionDestination.text = $"Destino: {destination}";
-
-        if (missionCoroutine != null)
-            StopCoroutine(missionCoroutine);
-
-        missionCoroutine = StartCoroutine(
-            ShowTemporarily(
-                missionPanel,
-                missionVisibleDuration));
+        {
+            missionDestination.text =
+                $"Destino: {destination}";
+        }
     }
 
     #endregion
 
-    #region NOTIFICATIONS
-
-    public void ShowNotification(
-        string title,
-        string message)
-    {
-        ShowNotification(
-            title,
-            message,
-            notificationVisibleDuration);
-    }
+    #region NOTIFICATION
 
     public void ShowNotification(
         string title,
         string message,
-        float duration)
+        float duration = 2.5f)
     {
-        if (notificationTitle != null)
-            notificationTitle.text = title;
-
-        if (notificationMessage != null)
-            notificationMessage.text = message;
+        if (notificationPanel == null)
+        {
+            return;
+        }
 
         if (notificationCoroutine != null)
-            StopCoroutine(notificationCoroutine);
+        {
+            StopCoroutine(
+                notificationCoroutine);
+        }
 
-        notificationCoroutine = StartCoroutine(
-            ShowTemporarily(
-                notificationPanel,
-                duration));
+        if (notificationTitle != null)
+        {
+            notificationTitle.text = title;
+        }
+
+        if (notificationMessage != null)
+        {
+            notificationMessage.text = message;
+        }
+
+        notificationPanel.SetActive(true);
+
+        notificationCoroutine =
+            StartCoroutine(
+                HideNotificationAfterDelay(
+                    duration));
+    }
+
+    private IEnumerator HideNotificationAfterDelay(
+        float duration)
+    {
+        yield return new WaitForSeconds(
+            duration);
+
+        HideNotification();
+    }
+
+    public void HideNotification()
+    {
+        if (notificationPanel != null)
+        {
+            notificationPanel.SetActive(false);
+        }
+
+        notificationCoroutine = null;
     }
 
     #endregion
@@ -139,123 +193,228 @@ public class WarehouseHUDController : MonoBehaviour
     public void ShowSummary(
         string palletID,
         string destination,
-        float elapsedSeconds,
+        float elapsedTime,
         int scanCount,
         int errorCount)
     {
-        int minutes =
-            Mathf.FloorToInt(elapsedSeconds / 60f);
+        if (summaryPanel == null)
+        {
+            return;
+        }
 
-        int seconds =
-            Mathf.FloorToInt(elapsedSeconds % 60f);
+        summaryPanel.SetActive(true);
 
         if (summaryTitle != null)
-            summaryTitle.text = "OPERACIÓN COMPLETADA";
+        {
+            summaryTitle.text =
+                "PUT AWAY COMPLETADO";
+        }
+
+        int minutes =
+            Mathf.FloorToInt(
+                elapsedTime / 60f);
+
+        int seconds =
+            Mathf.FloorToInt(
+                elapsedTime % 60f);
+
+        int successfulScans =
+            Mathf.Max(
+                scanCount - errorCount,
+                0);
+
+        float accuracy = 100f;
+
+        if (scanCount > 0)
+        {
+            accuracy =
+                ((float)successfulScans /
+                 scanCount) * 100f;
+        }
 
         if (summaryBody != null)
         {
             summaryBody.text =
-                $"Tarima: {palletID}\n" +
-                $"Destino: {destination}\n" +
+                $"Pallet: {palletID}\n" +
+                $"Destino: {destination}\n\n" +
                 $"Tiempo: {minutes:00}:{seconds:00}\n" +
                 $"Escaneos: {scanCount}\n" +
-                $"Errores: {errorCount}";
+                $"Errores: {errorCount}\n" +
+                $"Precisión: {accuracy:0}%";
         }
 
-        if (summaryCoroutine != null)
-            StopCoroutine(summaryCoroutine);
+        UpdateNewTaskButton();
 
-        summaryCoroutine = StartCoroutine(
-            ShowPanel(summaryPanel));
+        // Detener la cámara y liberar el mouse.
+        EnterSummaryMode();
     }
 
     public void HideSummary()
     {
-        if (summaryCoroutine != null)
-            StopCoroutine(summaryCoroutine);
+        if (summaryPanel != null)
+        {
+            summaryPanel.SetActive(false);
+        }
 
-        summaryCoroutine = StartCoroutine(
-            HidePanel(summaryPanel));
+        // Recuperar el controlador que estaba activo.
+        ExitSummaryMode();
+    }
+
+    private void UpdateNewTaskButton()
+    {
+        if (newTaskButton == null)
+        {
+            return;
+        }
+
+        if (orderManager == null)
+        {
+            newTaskButton.interactable = false;
+            return;
+        }
+
+        bool hasNextTask =
+            orderManager.HasNextTask();
+
+        newTaskButton.interactable =
+            hasNextTask;
+
+        TMP_Text buttonText =
+            newTaskButton
+                .GetComponentInChildren<TMP_Text>();
+
+        if (buttonText != null)
+        {
+            buttonText.text =
+                hasNextTask
+                    ? "NUEVA TAREA"
+                    : "SIN TAREAS PENDIENTES";
+        }
     }
 
     #endregion
 
-    #region ANIMATION
+    #region BUTTONS
 
-    private IEnumerator ShowTemporarily(
-        CanvasGroup panel,
-        float visibleDuration)
+    private void OnNewTaskPressed()
     {
-        yield return ShowPanel(panel);
-
-        yield return new WaitForSecondsRealtime(
-            visibleDuration);
-
-        yield return HidePanel(panel);
-    }
-
-    private IEnumerator ShowPanel(
-        CanvasGroup panel)
-    {
-        if (panel == null)
-            yield break;
-
-        panel.gameObject.SetActive(true);
-        panel.interactable = true;
-        panel.blocksRaycasts = true;
-
-        float elapsed = 0f;
-        float initialAlpha = panel.alpha;
-
-        while (elapsed < fadeDuration)
+        if (orderManager == null)
         {
-            elapsed += Time.unscaledDeltaTime;
+            Debug.LogError(
+                "WarehouseHUDController: " +
+                "OrderManager no está asignado.",
+                this);
 
-            panel.alpha = Mathf.Lerp(
-                initialAlpha,
-                1f,
-                elapsed / fadeDuration);
-
-            yield return null;
-        }
-
-        panel.alpha = 1f;
-    }
-
-    private IEnumerator HidePanel(
-        CanvasGroup panel)
-    {
-        if (panel == null)
-            yield break;
-
-        float elapsed = 0f;
-        float initialAlpha = panel.alpha;
-
-        while (elapsed < fadeDuration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            panel.alpha = Mathf.Lerp(
-                initialAlpha,
-                0f,
-                elapsed / fadeDuration);
-
-            yield return null;
-        }
-
-        HideImmediately(panel);
-    }
-
-    private void HideImmediately(
-        CanvasGroup panel)
-    {
-        if (panel == null)
             return;
+        }
 
-        panel.alpha = 0f;
-        panel.interactable = false;
-        panel.blocksRaycasts = false;
-        panel.gameObject.SetActive(false);
+        HideSummary();
+        HideNotification();
+
+        orderManager.StartNextTask();
+    }
+
+    private void OnRestartPressed()
+    {
+        if (orderManager == null)
+        {
+            Debug.LogError(
+                "WarehouseHUDController: " +
+                "OrderManager no está asignado.",
+                this);
+
+            return;
+        }
+
+        orderManager.RestartSimulation();
+    }
+
+    #endregion
+
+    #region SUMMARY MODE
+
+    private void EnterSummaryMode()
+    {
+        //--------------------------------------------------
+        // Recordar qué controlador estaba activo
+        //--------------------------------------------------
+
+        firstPersonWasActive =
+            firstPersonController != null &&
+            firstPersonController.enabled;
+
+        reachliftCameraWasActive =
+            reachliftCameraLook != null &&
+            reachliftCameraLook.enabled;
+
+        //--------------------------------------------------
+        // Desactivar temporalmente ambos
+        //--------------------------------------------------
+
+        if (firstPersonController != null)
+        {
+            firstPersonController.enabled =
+                false;
+        }
+
+        if (reachliftCameraLook != null)
+        {
+            reachliftCameraLook.enabled =
+                false;
+        }
+
+        //--------------------------------------------------
+        // Liberar cursor
+        //--------------------------------------------------
+
+        UnlockCursor();
+    }
+
+    private void ExitSummaryMode()
+    {
+        //--------------------------------------------------
+        // Restaurar solamente lo que estaba activo
+        //--------------------------------------------------
+
+        if (firstPersonController != null)
+        {
+            firstPersonController.enabled =
+                firstPersonWasActive;
+        }
+
+        if (reachliftCameraLook != null)
+        {
+            reachliftCameraLook.enabled =
+                reachliftCameraWasActive;
+        }
+
+        //--------------------------------------------------
+        // Recuperar control del mouse
+        //--------------------------------------------------
+
+        LockCursor();
+    }
+
+    #endregion
+
+    #region CURSOR CONTROL
+
+    private void UnlockCursor()
+    {
+        Cursor.lockState =
+            CursorLockMode.None;
+
+        Cursor.visible =
+            true;
+    }
+
+    private void LockCursor()
+    {
+        Cursor.lockState =
+            CursorLockMode.Locked;
+
+        Cursor.visible =
+            false;
     }
 
     #endregion
