@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class OrderManager : MonoBehaviour
 {
@@ -7,8 +8,27 @@ public class OrderManager : MonoBehaviour
 
     [Header("Interfaces")]
     [SerializeField] private OrderUI orderUI;
-    [SerializeField] private ScannerUI scannerUI;
     [SerializeField] private WarehouseHUDController warehouseHUD;
+
+    #endregion
+
+    #region PUT AWAY TASKS
+
+    [Header("Tareas Put Away")]
+    [SerializeField]
+    private List<PutAwayTask> putAwayTasks =
+        new List<PutAwayTask>();
+
+    [SerializeField] private int currentTaskIndex = 0;
+
+    private PutAwayTask currentTask;
+
+    //--------------------------------------------------
+    // Registro de tareas completadas
+    //--------------------------------------------------
+
+    private HashSet<int> completedTaskIndexes =
+        new HashSet<int>();
 
     #endregion
 
@@ -16,15 +36,6 @@ public class OrderManager : MonoBehaviour
 
     [Header("Orden actual")]
     public Order currentOrder;
-
-    [Header("Configuración de Put Away")]
-    [SerializeField] private string requiredPalletID = "P001";
-    [SerializeField] private string requiredProductName = "Laptop ASUS";
-    [SerializeField] private string originLocationID = "RECEIVING";
-    [SerializeField] private string destinationLocationID = "A1-L1";
-
-    [Tooltip("Asigna aquí el objeto Location_A1_L1.")]
-    [SerializeField] private StorageLocation destinationLocation;
 
     #endregion
 
@@ -54,65 +65,109 @@ public class OrderManager : MonoBehaviour
 
     private void Start()
     {
-        CreatePutAwayOrder();
+        StartCurrentTask();
     }
 
     #endregion
 
-    #region ORDER CREATION
+    #region TASK MANAGEMENT
 
-    private void CreatePutAwayOrder()
+    private void StartCurrentTask()
     {
+        //--------------------------------------------------
+        // Validar lista
+        //--------------------------------------------------
+
+        if (putAwayTasks == null ||
+            putAwayTasks.Count == 0)
+        {
+            Debug.LogError(
+                "OrderManager: No hay tareas " +
+                "Put Away configuradas.",
+                this);
+
+            return;
+        }
+
+        //--------------------------------------------------
+        // Validar índice
+        //--------------------------------------------------
+
+        if (currentTaskIndex < 0 ||
+            currentTaskIndex >=
+            putAwayTasks.Count)
+        {
+            Debug.LogError(
+                "OrderManager: Current Task Index " +
+                "fuera de rango.",
+                this);
+
+            return;
+        }
+
+        //--------------------------------------------------
+        // Obtener tarea
+        //--------------------------------------------------
+
+        currentTask =
+            putAwayTasks[currentTaskIndex];
+
+        if (currentTask == null)
+        {
+            Debug.LogError(
+                $"OrderManager: Tarea " +
+                $"{currentTaskIndex} es NULL.",
+                this);
+
+            return;
+        }
+
+        //--------------------------------------------------
+        // Reiniciar estado
+        //--------------------------------------------------
+
         ResetTaskState();
 
-        currentOrder = new Order
-        {
-            orderID = "PUT-0001",
-            customer = "Almacenamiento dirigido",
+        //--------------------------------------------------
+        // Crear orden
+        //--------------------------------------------------
 
-            items = new List<OrderItem>
-            {
-                new OrderItem
-                {
-                    palletID = requiredPalletID,
-                    productName = requiredProductName,
-                    scanned = false
-                }
-            }
-        };
+        CreatePutAwayOrder();
 
-        currentOrder.completedProducts = 0;
-        taskStartTime = Time.time;
+        //--------------------------------------------------
+        // Mostrar misión
+        //--------------------------------------------------
 
-        if (orderUI != null)
-        {
-            orderUI.UpdateOrder(currentOrder);
-        }
+        ShowCurrentMission();
 
-        if (warehouseHUD != null)
-        {
-            warehouseHUD.ShowMission(
-                currentOrder.orderID,
-                requiredPalletID,
-                requiredProductName,
-                originLocationID,
-                destinationLocationID);
-        }
+        //--------------------------------------------------
+        // Resaltar destino
+        //--------------------------------------------------
 
-        if (destinationLocation != null)
-        {
-            destinationLocation.HighlightAsDestination();
-        }
-        else
-        {
-            Debug.LogWarning(
-                "OrderManager: Destination Location no está asignado.",
-                this);
-        }
+        HighlightCurrentDestination();
+
+        //--------------------------------------------------
+        // Iniciar cronómetro
+        //--------------------------------------------------
+
+        taskStartTime =
+            Time.time;
+
+        //--------------------------------------------------
+        // Actualizar pantalla física
+        //--------------------------------------------------
+
+        UpdateTaskDisplay();
 
         Debug.Log(
-            $"Nueva tarea: mover {requiredPalletID} " +
-            $"desde {originLocationID} hacia {destinationLocationID}.");
+            $"Tarea iniciada: " +
+            $"{currentTask.taskID} | " +
+
+            $"Pallet: " +
+            $"{currentTask.palletID} | " +
+
+            $"Destino: " +
+            $"{currentTask.destinationLocationID}");
     }
 
     private void ResetTaskState()
@@ -130,11 +185,150 @@ public class OrderManager : MonoBehaviour
 
     #endregion
 
+    #region NEXT TASK
+
+    public void StartNextTask()
+    {
+        //--------------------------------------------------
+        // Debe terminar la tarea actual
+        //--------------------------------------------------
+
+        if (!taskCompleted)
+        {
+            Debug.LogWarning(
+                "No se puede iniciar otra tarea " +
+                "porque la actual no ha terminado.");
+
+            return;
+        }
+
+        //--------------------------------------------------
+        // Validar que exista otra
+        //--------------------------------------------------
+
+        if (!HasNextTask())
+        {
+            Debug.Log(
+                "Todas las tareas Put Away " +
+                "han sido completadas.");
+
+            return;
+        }
+
+        //--------------------------------------------------
+        // Avanzar índice
+        //--------------------------------------------------
+
+        currentTaskIndex++;
+
+        //--------------------------------------------------
+        // Iniciar nueva tarea
+        //--------------------------------------------------
+
+        StartCurrentTask();
+
+        Debug.Log(
+            $"Nueva tarea Put Away iniciada: " +
+            $"{currentTask.taskID}");
+    }
+
+    #endregion
+
+    #region RESTART SIMULATION
+
+    public void RestartSimulation()
+    {
+        Debug.Log(
+            "Reiniciando simulación...");
+
+        //--------------------------------------------------
+        // Recargar escena actual
+        //--------------------------------------------------
+
+        Scene currentScene =
+            SceneManager.GetActiveScene();
+
+        SceneManager.LoadScene(
+            currentScene.buildIndex);
+    }
+
+    #endregion
+
+    #region ORDER CREATION
+
+    private void CreatePutAwayOrder()
+    {
+        currentOrder =
+            new Order
+            {
+                orderID =
+                    currentTask.taskID,
+
+                customer =
+                    "Almacenamiento dirigido",
+
+                items =
+                    new List<OrderItem>
+                    {
+                        new OrderItem
+                        {
+                            palletID =
+                                currentTask.palletID,
+
+                            productName =
+                                currentTask.productName,
+
+                            scanned = false
+                        }
+                    }
+            };
+
+        currentOrder.completedProducts =
+            0;
+    }
+
+    private void ShowCurrentMission()
+    {
+        if (warehouseHUD == null)
+            return;
+
+        warehouseHUD.ShowMission(
+            currentTask.taskID,
+            currentTask.palletID,
+            currentTask.productName,
+            currentTask.originLocationID,
+            currentTask.destinationLocationID);
+    }
+
+    private void HighlightCurrentDestination()
+    {
+        if (currentTask.destinationLocation ==
+            null)
+        {
+            Debug.LogWarning(
+                $"Tarea {currentTask.taskID}: " +
+                "Destination Location no asignado.",
+                this);
+
+            return;
+        }
+
+        currentTask.destinationLocation
+            .HighlightAsDestination();
+    }
+
+    #endregion
+
     #region PALLET VALIDATION
 
-    public bool ValidatePallet(Pallet pallet)
+    public bool ValidatePallet(
+        Pallet pallet)
     {
         scanCount++;
+
+        //--------------------------------------------------
+        // Tarea completada
+        //--------------------------------------------------
 
         if (taskCompleted)
         {
@@ -145,42 +339,68 @@ public class OrderManager : MonoBehaviour
             return false;
         }
 
+        //--------------------------------------------------
+        // Pallet NULL
+        //--------------------------------------------------
+
         if (pallet == null)
         {
             RegisterError(
                 "ESCANEO INVÁLIDO",
-                "No se recibió información de la tarima.");
+                "No se recibió información " +
+                "de la tarima.");
 
             return false;
         }
 
-        if (pallet.palletID != requiredPalletID)
+        //--------------------------------------------------
+        // Pallet incorrecto
+        //--------------------------------------------------
+
+        if (pallet.palletID !=
+            currentTask.palletID)
         {
             RegisterError(
                 "TARIMA INCORRECTA",
-                $"Esperada: {requiredPalletID} | " +
-                $"Escaneada: {pallet.palletID}");
+
+                $"Esperada: " +
+                $"{currentTask.palletID} | " +
+
+                $"Escaneada: " +
+                $"{pallet.palletID}");
 
             return false;
         }
 
-        scannedPallet = pallet;
-        palletValidated = true;
+        //--------------------------------------------------
+        // Pallet correcto
+        //--------------------------------------------------
 
-        MarkOrderItemAsScanned(pallet);
+        scannedPallet =
+            pallet;
+
+        palletValidated =
+            true;
+
+        MarkOrderItemAsScanned(
+            pallet);
 
         ShowSuccess(
             "TARIMA CORRECTA",
+
             $"{pallet.palletID} validada. " +
-            $"Destino: {destinationLocationID}");
+            $"Destino: " +
+            $"{currentTask.destinationLocationID}");
 
         Debug.Log(
-            $"Tarima validada correctamente: {pallet.palletID}");
+            $"Tarima validada correctamente: " +
+            $"{pallet.palletID}");
 
         return true;
     }
 
-    private void MarkOrderItemAsScanned(Pallet pallet)
+    private void MarkOrderItemAsScanned(
+        Pallet pallet)
     {
         if (currentOrder == null ||
             currentOrder.items == null)
@@ -188,23 +408,26 @@ public class OrderManager : MonoBehaviour
             return;
         }
 
-        foreach (OrderItem item in currentOrder.items)
+        foreach (
+            OrderItem item
+            in currentOrder.items)
         {
-            if (item.palletID != pallet.palletID)
+            if (item.palletID !=
+                pallet.palletID)
+            {
                 continue;
+            }
 
             if (!item.scanned)
             {
-                item.scanned = true;
-                currentOrder.completedProducts++;
+                item.scanned =
+                    true;
+
+                currentOrder
+                    .completedProducts++;
             }
 
             break;
-        }
-
-        if (orderUI != null)
-        {
-            orderUI.UpdateOrder(currentOrder);
         }
     }
 
@@ -212,9 +435,14 @@ public class OrderManager : MonoBehaviour
 
     #region DESTINATION VALIDATION
 
-    public bool ValidateDestination(StorageLocation location)
+    public bool ValidateDestination(
+        StorageLocation location)
     {
         scanCount++;
+
+        //--------------------------------------------------
+        // Tarea completada
+        //--------------------------------------------------
 
         if (taskCompleted)
         {
@@ -225,57 +453,92 @@ public class OrderManager : MonoBehaviour
             return false;
         }
 
+        //--------------------------------------------------
+        // Pallet no validado
+        //--------------------------------------------------
+
         if (!palletValidated ||
             scannedPallet == null)
         {
             RegisterError(
                 "SECUENCIA INCORRECTA",
-                "Primero debe escanear la tarima asignada.");
+
+                "Primero debe escanear " +
+                "la tarima asignada.");
 
             return false;
         }
+
+        //--------------------------------------------------
+        // Location NULL
+        //--------------------------------------------------
 
         if (location == null)
         {
             RegisterError(
                 "UBICACIÓN INVÁLIDA",
-                "No se recibió una ubicación válida.");
+
+                "No se recibió una " +
+                "ubicación válida.");
 
             return false;
         }
 
-        if (location.locationID != destinationLocationID)
+        //--------------------------------------------------
+        // Ubicación incorrecta
+        //--------------------------------------------------
+
+        if (location.locationID !=
+            currentTask.destinationLocationID)
         {
             RegisterError(
                 "UBICACIÓN INCORRECTA",
-                $"Destino esperado: {destinationLocationID}");
+
+                $"Destino esperado: " +
+                $"{currentTask.destinationLocationID}");
 
             Debug.LogWarning(
-                $"Ubicación escaneada: {location.locationID}");
+                $"Ubicación escaneada: " +
+                $"{location.locationID}");
 
             return false;
         }
+
+        //--------------------------------------------------
+        // Ubicación ocupada
+        //--------------------------------------------------
 
         if (!location.CanReceivePallet())
         {
             RegisterError(
                 "UBICACIÓN OCUPADA",
-                $"{location.locationID} no está disponible.");
+
+                $"{location.locationID} " +
+                "no está disponible.");
 
             return false;
         }
 
-        scannedDestination = location;
-        destinationValidated = true;
+        //--------------------------------------------------
+        // Ubicación correcta
+        //--------------------------------------------------
 
-        scannedDestination.MarkAsValidated();
+        scannedDestination =
+            location;
+
+        destinationValidated =
+            true;
+
+        scannedDestination
+            .MarkAsValidated();
 
         ShowSuccess(
             "UBICACIÓN CORRECTA",
             "Puede depositar la tarima.");
 
         Debug.Log(
-            $"Destino validado correctamente: {location.locationID}");
+            $"Destino validado correctamente: " +
+            $"{location.locationID}");
 
         return true;
     }
@@ -284,65 +547,128 @@ public class OrderManager : MonoBehaviour
 
     #region DELIVERY
 
-    public bool ConfirmDelivery(Pallet pallet)
+    public bool ConfirmDelivery(
+        Pallet pallet)
     {
+        //--------------------------------------------------
+        // Tarea ya completa
+        //--------------------------------------------------
+
         if (taskCompleted)
-        {
             return false;
-        }
+
+        //--------------------------------------------------
+        // Pallet sin validar
+        //--------------------------------------------------
 
         if (!palletValidated ||
             scannedPallet == null)
         {
             RegisterError(
                 "ENTREGA NO AUTORIZADA",
+
                 "La tarima no ha sido validada.");
 
             return false;
         }
+
+        //--------------------------------------------------
+        // Destino sin validar
+        //--------------------------------------------------
 
         if (!destinationValidated ||
             scannedDestination == null)
         {
             RegisterError(
                 "ENTREGA NO AUTORIZADA",
-                "Debe escanear la ubicación destino.");
+
+                "Debe escanear la " +
+                "ubicación destino.");
 
             return false;
         }
+
+        //--------------------------------------------------
+        // Pallet incorrecto
+        //--------------------------------------------------
 
         if (pallet == null ||
             pallet != scannedPallet)
         {
             RegisterError(
                 "TARIMA INCORRECTA",
-                "La carga depositada no corresponde a la tarea.");
+
+                "La carga depositada no " +
+                "corresponde a la tarea.");
 
             return false;
         }
 
-        if (!scannedDestination.CanReceivePallet())
+        //--------------------------------------------------
+        // Destino ocupado
+        //--------------------------------------------------
+
+        if (!scannedDestination
+            .CanReceivePallet())
         {
             RegisterError(
                 "UBICACIÓN OCUPADA",
-                "La ubicación ya no está disponible.");
+
+                "La ubicación ya no está " +
+                "disponible.");
 
             return false;
         }
 
-        scannedDestination.PlaceAndStorePallet(pallet);
+        //--------------------------------------------------
+        // ALMACENAR
+        //--------------------------------------------------
 
-        taskCompleted = true;
+        scannedDestination
+            .PlaceAndStorePallet(
+                pallet);
+
+        //--------------------------------------------------
+        // Tarea completa
+        //--------------------------------------------------
+
+        taskCompleted =
+            true;
+
+        //--------------------------------------------------
+        // Registrar historial
+        //--------------------------------------------------
+
+        completedTaskIndexes.Add(
+            currentTaskIndex);
+
+        //--------------------------------------------------
+        // Actualizar monitor físico
+        //--------------------------------------------------
+
+        UpdateTaskDisplay();
+
+        //--------------------------------------------------
+        // Métricas
+        //--------------------------------------------------
 
         float elapsedTime =
-            Time.time - taskStartTime;
+            Time.time -
+            taskStartTime;
+
+        //--------------------------------------------------
+        // HUD
+        //--------------------------------------------------
 
         if (warehouseHUD != null)
         {
             warehouseHUD.ShowNotification(
                 "MOVIMIENTO COMPLETADO",
-                $"{pallet.palletID} almacenada en " +
+
+                $"{pallet.palletID} " +
+                $"almacenada en " +
                 $"{scannedDestination.locationID}",
+
                 2.5f);
 
             warehouseHUD.ShowSummary(
@@ -353,35 +679,63 @@ public class OrderManager : MonoBehaviour
                 errorCount);
         }
 
-        if (scannerUI != null)
-        {
-            scannerUI.ShowMessage(
-                "Movimiento completado",
-                $"{pallet.palletID} → " +
-                $"{scannedDestination.locationID}");
-        }
-
         Debug.Log(
-            "===== TAREA PUT AWAY COMPLETADA =====");
+            $"===== TAREA " +
+            $"{currentTask.taskID} " +
+            $"COMPLETADA =====");
 
         return true;
     }
 
     #endregion
 
-    #region UI MESSAGES
+    #region TASK DISPLAY
+
+    private void UpdateTaskDisplay()
+    {
+        if (orderUI == null)
+            return;
+
+        orderUI.UpdateTaskBoard(
+            putAwayTasks,
+            currentTaskIndex,
+            completedTaskIndexes,
+            taskCompleted);
+    }
+
+    #endregion
+
+    #region PUBLIC TASK INFO
+
+    public PutAwayTask GetCurrentTask()
+    {
+        return currentTask;
+    }
+
+    public int GetCurrentTaskIndex()
+    {
+        return currentTaskIndex;
+    }
+
+    public int GetTaskCount()
+    {
+        return putAwayTasks.Count;
+    }
+
+    public bool HasNextTask()
+    {
+        return currentTaskIndex <
+               putAwayTasks.Count - 1;
+    }
+
+    #endregion
+
+    #region NOTIFICATIONS
 
     private void ShowSuccess(
         string title,
         string message)
     {
-        if (scannerUI != null)
-        {
-            scannerUI.ShowMessage(
-                title,
-                message);
-        }
-
         if (warehouseHUD != null)
         {
             warehouseHUD.ShowNotification(
@@ -389,7 +743,8 @@ public class OrderManager : MonoBehaviour
                 message);
         }
 
-        Debug.Log($"{title}: {message}");
+        Debug.Log(
+            $"{title}: {message}");
     }
 
     private void RegisterError(
@@ -398,13 +753,6 @@ public class OrderManager : MonoBehaviour
     {
         errorCount++;
 
-        if (scannerUI != null)
-        {
-            scannerUI.ShowMessage(
-                title,
-                message);
-        }
-
         if (warehouseHUD != null)
         {
             warehouseHUD.ShowNotification(
@@ -412,7 +760,8 @@ public class OrderManager : MonoBehaviour
                 message);
         }
 
-        Debug.LogWarning($"{title}: {message}");
+        Debug.LogWarning(
+            $"{title}: {message}");
     }
 
     #endregion

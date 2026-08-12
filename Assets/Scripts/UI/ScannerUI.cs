@@ -9,11 +9,14 @@ public class ScannerUI : MonoBehaviour
     [SerializeField] private GameObject scannerPanel;
     [SerializeField] private GameObject actionText;
 
-    [Header("Textos")]
+    [Header("Información del Pallet")]
+    [SerializeField] private TMP_Text statusText;
+    [SerializeField] private TMP_Text palletIDText;
     [SerializeField] private TMP_Text productText;
     [SerializeField] private TMP_Text skuText;
     [SerializeField] private TMP_Text rackText;
     [SerializeField] private TMP_Text quantityText;
+    [SerializeField] private TMP_Text weightText;
 
     #endregion
 
@@ -21,74 +24,59 @@ public class ScannerUI : MonoBehaviour
 
     private void Start()
     {
-        Hide();
+        HidePalletInfo();
+        HideAction();
     }
 
     #endregion
 
-    #region PALLET UI
+    #region PALLET INFORMATION
 
-    public void Show(Pallet pallet)
+    public void ShowPalletInfo(Pallet pallet)
     {
         if (pallet == null)
             return;
 
-        scannerPanel.SetActive(true);
+        if (scannerPanel != null)
+            scannerPanel.SetActive(true);
 
-        productText.text =
-            $"Producto: {pallet.productName}";
+        if (statusText != null)
+            statusText.text = "INFORMACIÓN DEL PALLET";
 
-        skuText.text =
-            $"SKU: {pallet.sku}";
+        if (palletIDText != null)
+            palletIDText.text =
+                $"Pallet ID: {pallet.palletID}";
 
-        rackText.text =
-            $"Ubicación: {pallet.rack} | Nivel: {pallet.level}";
+        if (skuText != null)
+            skuText.text =
+                $"SKU: {pallet.sku}";
 
-        quantityText.text =
-            $"Cantidad: {pallet.quantity}";
+        if (productText != null)
+            productText.text =
+                $"Product Name: {pallet.productName}";
+
+        if (rackText != null)
+            rackText.text =
+                $"Rack: {pallet.rack}";
+
+        if (quantityText != null)
+            quantityText.text =
+                $"Quantity: {pallet.quantity}";
+
+        if (weightText != null)
+            weightText.text =
+                $"Weight: {pallet.weight}";
+    }
+
+    public void HidePalletInfo()
+    {
+        if (scannerPanel != null)
+            scannerPanel.SetActive(false);
     }
 
     #endregion
 
-    #region LOCATION UI
-
-    public void Show(StorageLocation location)
-    {
-        if (location == null)
-            return;
-
-        scannerPanel.SetActive(true);
-
-        productText.text =
-            $"Ubicación: {location.locationID}";
-
-        skuText.text =
-            $"Rack: {location.rack}";
-
-        rackText.text =
-            $"Nivel: {location.level}";
-
-        quantityText.text =
-            location.CanReceivePallet()
-                ? "Estado: Disponible"
-                : "Estado: Ocupada";
-    }
-
-    #endregion
-
-    #region MESSAGE UI
-
-    public void ShowMessage(
-        string title,
-        string message)
-    {
-        scannerPanel.SetActive(true);
-
-        productText.text = title;
-        skuText.text = message;
-        rackText.text = string.Empty;
-        quantityText.text = string.Empty;
-    }
+    #region ACTION
 
     public void ShowAction()
     {
@@ -98,15 +86,6 @@ public class ScannerUI : MonoBehaviour
 
     public void HideAction()
     {
-        if (actionText != null)
-            actionText.SetActive(false);
-    }
-
-    public void Hide()
-    {
-        if (scannerPanel != null)
-            scannerPanel.SetActive(false);
-
         if (actionText != null)
             actionText.SetActive(false);
     }
