@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &4821164 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2801005587035800953, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
+  m_PrefabInstance: {fileID: 212931382}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &18463333
 GameObject:
   m_ObjectHideFlags: 0
@@ -1114,6 +1119,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 14b6f5a5246465244bd9c22d0e61db8a, type: 3}
+--- !u!4 &154584812 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5654409507178041584, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
+  m_PrefabInstance: {fileID: 212931382}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &182555467
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1949,10 +1959,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1bce609617d3684c8e3e9d79489e27b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForkliftLiftController
-  liftSystem: {fileID: 1065358879}
+  mastStage1: {fileID: 957666272}
+  mastStage2: {fileID: 154584812}
+  mastStage3: {fileID: 4821164}
   liftSpeed: 0.8
-  lowerTravel: 0
-  upperTravel: 1.2
+  stage1Travel: 0.8
+  stage2Travel: 0.8
+  stage3Travel: 0.8
 --- !u!1001 &224530755
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6353,6 +6366,11 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 112
   m_CollisionDetection: 3
+--- !u!4 &957666272 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -2673750617211002719, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
+  m_PrefabInstance: {fileID: 212931382}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &995927919
 GameObject:
   m_ObjectHideFlags: 0
@@ -6828,11 +6846,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1033636329}
   m_CullTransparentMesh: 1
---- !u!4 &1065358879 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -5505013203366626407, guid: 3b7d2561de49f2d40b9a2d036cbb92f2, type: 3}
-  m_PrefabInstance: {fileID: 212931382}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1080978579
 PrefabInstance:
   m_ObjectHideFlags: 0
